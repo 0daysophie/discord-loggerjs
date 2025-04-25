@@ -8,8 +8,8 @@ Startup:
 `node logger.js`
 input your token
 input type:
-- none - will ask for server id and channel ids
-- group - group dm
-- dm - private dm
+none - will ask for server id and channel ids
+group - group dm
+dm - private dm
 input channel id or if server type is selected you can type every for all channels
 logs should appear in ./logs and the file names are [name]_[id].log

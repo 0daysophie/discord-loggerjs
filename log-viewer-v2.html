@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Log Viewer v2</title>
+    <style>
+        /* Variables for theming */
+        :root {
+            --bg-color: #36393f;
+            --bg-secondary: #2f3136;
+            --bg-tertiary: #202225;
+            --text-color: #dcddde;
+            --text-muted: #72767d;
+            --accent-color: #7289da;
+            --accent-hover: #677bc4;
+            --success-color: #43b581;
+            --danger-color: #f04747;
+            --message-bg: #32353b;
+            --message-hover: #3c3f45;
+            --border-color: #42454a;
+            --scrollbar-thumb: #202225;
+            --scrollbar-track: #2e3338;
+            --animation-duration: 0.3s;
+            --message-spacing: 16px;
+            --avatar-size: 40px;
+            --header-height: 60px;
+            --footer-height: 60px;
+            --border-radius: 8px;
+            --box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* Light theme variables */
+        .light-theme {
+            --bg-color: #ffffff;
+            --bg-secondary: #f2f3f5;
+            --bg-tertiary: #e3e5e8;
+            --text-color: #2e3338;
+            --text-muted: #747f8d;
+            --accent-color: #7289da;
+            --accent-hover: #677bc4;
+            --success-color: #43b581;
+            --danger-color: #f04747;
+            --message-bg: #f7f7f8;
+            --message-hover: #ebedef;
+            --border-color: #e3e5e8;
+            --scrollbar-thumb: #c4c9ce;
+            --scrollbar-track: #f2f3f5;
+        }
+
+        /* Global styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            transition: background-color var(--animation-duration) ease, color var(--animation-duration) ease;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Server mode with sidebar */
+        .server-mode {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Channel sidebar */
+        .channel-sidebar {
+            width: 240px;
+            background-color: var(--bg-tertiary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width var(--animation-duration) ease;
+            overflow: hidden;
+        }
+
+        .channel-sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .channel-sidebar-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        .channel-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .channel-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .channel-list::-webkit-scrollbar-track {
+            background-color: var(--scrollbar-track);
+            border-radius: 3px;
+        }
+
+        .channel-list::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb);
+            border-radius: 3px;
+        }
+
+        .channel-item {
+            padding: 8px 15px;
+            margin: 2px 5px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s ease;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .channel-item:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .channel-item.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .channel-icon {
+            margin-right: 8px;
+            font-size: 1rem;
+        }
+
+        .channel-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .channel-badge {
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .channel-item.active .channel-badge {
+            background-color: white;
+            color: var(--accent-color);
+        }
+
+        .channel-actions {
+            padding: 10px 15px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .channel-action-button {
+            background-color: var(--bg-secondary);
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 6px 10px;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.8rem;
+        }
+
+        .channel-action-button:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        /* Server content area */
+        .server-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Channel indicator in messages */
+        .channel-indicator {
+            display: inline-block;
+            background-color: var(--bg-secondary);
+            color: var(--accent-color);
+            border-radius: 4px;
+            padding: 2px 6px;
+            margin-right: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Header styles */
+        header {
+            background-color: var(--bg-tertiary);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            height: var(--header-height);
+            z-index: 10;
+            box-shadow: var(--box-shadow);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-input-container {
+            position: relative;
+        }
+
+        .file-input {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color var(--animation-duration) ease;
+        }
+
+        .file-input-label:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .file-input-text {
+            margin-right: 8px;
+        }
+
+        /* Main content styles */
+        main {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .info-panel {
+            background-color: var(--bg-secondary);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .channel-info h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .channel-info span {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Chat container styles */
+        .chat-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .messages {
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+        }
+
+        /* Custom scrollbar */
+        .messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background-color: var(--scrollbar-track);
+            border-radius: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-muted);
+        }
+
+        /* Welcome message */
+        .welcome-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: var(--text-muted);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .welcome-message h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        /* Message styles */
+        .message {
+            display: flex;
+            margin-bottom: var(--message-spacing);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background-color: var(--message-bg);
+            transition: background-color var(--animation-duration) ease;
+            animation: slideIn 0.3s ease;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .message:hover {
+            background-color: var(--message-hover);
+        }
+
+        .message-avatar {
+            width: var(--avatar-size);
+            height: var(--avatar-size);
+            border-radius: 50%;
+            margin-right: 15px;
+            background-color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+
+        .message-author {
+            font-weight: 600;
+            margin-right: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .message-text {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .message-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-id, .user-id {
+            display: flex;
+            align-items: center;
+        }
+
+        .message-id:before {
+            content: "MSG:";
+            margin-right: 3px;
+            font-weight: 600;
+        }
+
+        .user-id:before {
+            content: "USER:";
+            margin-right: 3px;
+            font-weight: 600;
+        }
+
+        /* Attachment styles */
+        .attachments {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .attachment {
+            padding: 8px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+
+        .attachment-media {
+            flex-direction: column;
+            align-items: flex-start;
+            overflow: hidden;
+        }
+
+        .attachment-image-container,
+        .attachment-video-container {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .attachment-image {
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            display: block;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        .attachment-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* Special styling for GIFs */
+        .attachment-image[src$=".gif"] {
+            background-color: #000;
+        }
+
+        .attachment-video {
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+            border-radius: 4px;
+            background-color: #000;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        .attachment-video-container {
+            position: relative;
+        }
+
+        .attachment-video-container::before {
+            content: "Hold to play";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .attachment-video-container:hover::before {
+            opacity: 0;
+        }
+
+        .attachment-info {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .attachment-icon {
+            margin-right: 8px;
+        }
+
+        .attachment-link {
+            color: var(--accent-color);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .attachment-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer styles */
+        footer {
+            background-color: var(--bg-tertiary);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            height: var(--footer-height);
+            z-index: 10;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-button {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-secondary);
+            color: var(--text-color);
+            border: none;
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color var(--animation-duration) ease;
+        }
+
+        .control-button:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .button-icon {
+            margin-right: 5px;
+        }
+
+        .credits {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--accent-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Date separator */
+        .date-separator {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .date-line {
+            flex: 1;
+            height: 1px;
+            background-color: var(--border-color);
+        }
+
+        .date-text {
+            padding: 0 10px;
+            font-weight: 600;
+        }
+
+        /* Message links */
+        .message-link {
+            color: var(--accent-color);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .message-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Mentions */
+        .mention {
+            background-color: rgba(114, 137, 218, 0.1);
+            color: var(--accent-color);
+            border-radius: 3px;
+            padding: 0 2px;
+            font-weight: 500;
+        }
+
+        /* Load More button */
+        .load-more {
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        .load-more-button {
+            display: flex;
+            align-items: center;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color var(--animation-duration) ease;
+            font-size: 1rem;
+        }
+
+        .load-more-button:hover {
+            background-color: var(--accent-hover);
+            animation: pulse 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Discord Log Viewer</h1>
+            <div class="file-input-container">
+                <label for="log-file" class="file-input-label">
+                    <span class="file-input-text">Choose Log File</span>
+                    <span class="file-input-icon">📁</span>
+                </label>
+                <input type="file" id="log-file" accept=".log" class="file-input">
+            </div>
+        </header>
+
+        <main id="main-content">
+            <div class="info-panel">
+                <div class="channel-info">
+                    <h2 id="channel-name">No log loaded</h2>
+                    <span id="channel-id"></span>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Messages:</span>
+                        <span id="message-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Users:</span>
+                        <span id="user-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">First Message:</span>
+                        <span id="first-message-date" class="stat-value">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Last Message:</span>
+                        <span id="last-message-date" class="stat-value">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div id="messages" class="messages">
+                    <!-- Messages will be added here by JavaScript -->
+                    <div class="welcome-message">
+                        <h3>Welcome to Discord Log Viewer</h3>
+                        <p>Select a log file to view messages</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Server mode layout with channel sidebar -->
+        <div id="server-layout" class="server-mode" style="display: none;">
+            <div class="channel-sidebar">
+                <div class="channel-sidebar-header">
+                    <div class="channel-sidebar-title">Channels</div>
+                    <div class="channel-count" id="channel-count">0</div>
+                </div>
+                <div class="channel-list" id="channel-list">
+                    <!-- Channels will be added here by JavaScript -->
+                </div>
+                <div class="channel-actions">
+                    <button id="select-all-channels" class="channel-action-button">Select All</button>
+                    <button id="clear-channel-selection" class="channel-action-button">Clear</button>
+                </div>
+            </div>
+
+            <div class="server-content">
+                <div class="info-panel">
+                    <div class="channel-info">
+                        <h2 id="server-name">No server log loaded</h2>
+                        <span id="server-id"></span>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Messages:</span>
+                            <span id="server-message-count" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Users:</span>
+                            <span id="server-user-count" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Channels:</span>
+                            <span id="server-channel-count" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Date Range:</span>
+                            <span id="server-date-range" class="stat-value">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-container">
+                    <div id="server-messages" class="messages">
+                        <!-- Server messages will be added here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="controls">
+                <button id="scroll-to-bottom" class="control-button">
+                    <span class="button-icon">⬇️</span>
+                    <span class="button-text">Scroll to Bottom</span>
+                </button>
+                <button id="scroll-to-top" class="control-button">
+                    <span class="button-icon">⬆️</span>
+                    <span class="button-text">Scroll to Top</span>
+                </button>
+                <button id="toggle-theme" class="control-button">
+                    <span class="button-icon">🌓</span>
+                    <span class="button-text">Toggle Theme</span>
+                </button>
+            </div>
+            <div class="credits">
+                <p>Discord Log Viewer - Created with ❤️</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('log-file');
+        const messagesContainer = document.getElementById('messages');
+        const serverMessagesContainer = document.getElementById('server-messages');
+        const channelNameElement = document.getElementById('channel-name');
+        const channelIdElement = document.getElementById('channel-id');
+        const messageCountElement = document.getElementById('message-count');
+        const userCountElement = document.getElementById('user-count');
+        const firstMessageDateElement = document.getElementById('first-message-date');
+        const lastMessageDateElement = document.getElementById('last-message-date');
+        const scrollToBottomButton = document.getElementById('scroll-to-bottom');
+        const scrollToTopButton = document.getElementById('scroll-to-top');
+        const toggleThemeButton = document.getElementById('toggle-theme');
+        const mainContent = document.getElementById('main-content');
+        const serverLayout = document.getElementById('server-layout');
+        const channelList = document.getElementById('channel-list');
+        const serverNameElement = document.getElementById('server-name');
+        const serverIdElement = document.getElementById('server-id');
+        const serverMessageCountElement = document.getElementById('server-message-count');
+        const serverUserCountElement = document.getElementById('server-user-count');
+        const serverChannelCountElement = document.getElementById('server-channel-count');
+        const serverDateRangeElement = document.getElementById('server-date-range');
+        const selectAllChannelsButton = document.getElementById('select-all-channels');
+        const clearChannelSelectionButton = document.getElementById('clear-channel-selection');
+        const channelCountElement = document.getElementById('channel-count');
+
+        // State variables
+        let isDarkTheme = true;
+        let uniqueUsers = new Set();
+        let messageCount = 0;
+        let firstMessageDate = null;
+        let lastMessageDate = null;
+        let channelName = '';
+        let channelId = '';
+        let serverId = '';
+        let serverName = '';
+
+        // Server mode variables
+        let isServerMode = false;
+        let serverChannels = [];
+        let selectedChannels = new Set();
+        let channelMessages = new Map(); // Map of channel ID to messages
+        let channelStats = new Map(); // Map of channel ID to stats (message count, users)
+
+        // Lazy loading variables
+        let allMessages = [];
+        let displayedMessages = [];
+        let batchSize = 100;
+        let isLoadingMore = false;
+
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        scrollToBottomButton.addEventListener('click', scrollToBottom);
+        scrollToTopButton.addEventListener('click', scrollToTop);
+        toggleThemeButton.addEventListener('click', toggleTheme);
+        selectAllChannelsButton.addEventListener('click', selectAllChannels);
+        clearChannelSelectionButton.addEventListener('click', clearChannelSelection);
+
+        // Add scroll event listener for automatic loading
+        messagesContainer.addEventListener('scroll', handleScroll);
+        serverMessagesContainer.addEventListener('scroll', handleServerScroll);
+
+        // Functions
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Reset state
+            resetState();
+
+            // Show loading
+            showLoading();
+
+            // Read file
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                parseLogFile(content);
+            };
+            reader.onerror = function() {
+                showError('Error reading file');
+            };
+            reader.readAsText(file);
+        }
+
+        function resetState() {
+            messagesContainer.innerHTML = '';
+            serverMessagesContainer.innerHTML = '';
+            channelList.innerHTML = '';
+
+            uniqueUsers = new Set();
+            messageCount = 0;
+            firstMessageDate = null;
+            lastMessageDate = null;
+            channelName = '';
+            channelId = '';
+            serverId = '';
+            serverName = '';
+
+            // Reset server mode variables
+            isServerMode = false;
+            serverChannels = [];
+            selectedChannels = new Set();
+            channelMessages = new Map();
+            channelStats = new Map();
+
+            // Reset layout
+            mainContent.style.display = 'flex';
+            serverLayout.style.display = 'none';
+        }
+
+        function showLoading() {
+            const container = isServerMode ? serverMessagesContainer : messagesContainer;
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading log file...</p>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            const container = isServerMode ? serverMessagesContainer : messagesContainer;
+            container.innerHTML = `
+                <div class="welcome-message">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function parseLogFile(content) {
+            const lines = content.split('\n');
+            allMessages = [];
+            displayedMessages = [];
+            let isGroupDM = true;
+            let currentChannelId = null;
+            let currentChannelName = null;
+
+            // First pass: detect if this is a server log and extract server info
+            const headerLine = lines.find(line => line.includes('=========='));
+            if (headerLine) {
+                const headerMatch = headerLine.match(/LOGGING STARTED FOR (SERVER |)([^(]+) \(([^)]+)\)/);
+                if (headerMatch) {
+                    const isServer = !!headerMatch[1];
+                    const name = headerMatch[2].trim();
+                    const id = headerMatch[3];
+
+                    if (isServer) {
+                        // This is a server log
+                        isGroupDM = false;
+                        isServerMode = true;
+                        serverName = name;
+                        serverId = id;
+
+                        // Switch to server layout
+                        mainContent.style.display = 'none';
+                        serverLayout.style.display = 'flex';
+
+                        // Extract all channels from the log
+                        const channelHeaders = lines.filter(line => line.includes('----- CHANNEL:'));
+                        serverChannels = channelHeaders.map(header => {
+                            const channelMatch = header.match(/CHANNEL: #([^(]+) \(([^)]+)\)/);
+                            if (channelMatch) {
+                                return {
+                                    name: channelMatch[1].trim(),
+                                    id: channelMatch[2],
+                                    messageCount: 0,
+                                    users: new Set()
+                                };
+                            }
+                            return null;
+                        }).filter(channel => channel !== null);
+
+                        // Initialize channel messages map
+                        serverChannels.forEach(channel => {
+                            channelMessages.set(channel.id, []);
+                            channelStats.set(channel.id, {
+                                messageCount: 0,
+                                users: new Set(),
+                                firstDate: null,
+                                lastDate: null
+                            });
+                        });
+                    } else {
+                        // This is a DM/group log
+                        channelName = name;
+                        channelId = id;
+                    }
+                }
+            }
+
+            // Process each line
+            for (const line of lines) {
+                // Skip empty lines
+                if (!line.trim()) continue;
+
+                // Check if it's a header line
+                if (line.includes('==========')) {
+                    continue; // Already processed in the first pass
+                }
+
+                // Check if it's a channel header in server logs
+                if (line.includes('----- CHANNEL:')) {
+                    if (isServerMode) {
+                        const channelMatch = line.match(/CHANNEL: #([^(]+) \(([^)]+)\)/);
+                        if (channelMatch) {
+                            currentChannelName = channelMatch[1].trim();
+                            currentChannelId = channelMatch[2];
+                        }
+                    }
+                    continue;
+                }
+
+                // Check if it's an attachment line
+                if (line.trim().startsWith('📎 Attachment:') || line.trim().startsWith('Attachment:')) {
+                    // Add attachment to the last message
+                    const processAttachment = (messagesArray) => {
+                        if (messagesArray.length > 0) {
+                            // Try different attachment formats
+                            let attachmentMatch = line.match(/📎 Attachment: ([^-]+) - (.+)/);
+
+                            if (!attachmentMatch) {
+                                attachmentMatch = line.match(/Attachment: ([^-]+) - (.+)/);
+                            }
+
+                            // If still no match, try a more generic pattern
+                            if (!attachmentMatch) {
+                                const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
+                                if (urlMatch) {
+                                    const url = urlMatch[1];
+                                    // Extract filename from URL
+                                    const urlParts = url.split('/');
+                                    const fileName = urlParts[urlParts.length - 1].split('?')[0];
+
+                                    attachmentMatch = [null, fileName, url];
+                                }
+                            }
+
+                            if (attachmentMatch) {
+                                const attachmentName = attachmentMatch[1].trim();
+                                const attachmentUrl = attachmentMatch[2].trim();
+
+                                if (!messagesArray[messagesArray.length - 1].attachments) {
+                                    messagesArray[messagesArray.length - 1].attachments = [];
+                                }
+
+                                messagesArray[messagesArray.length - 1].attachments.push({
+                                    name: attachmentName,
+                                    url: attachmentUrl
+                                });
+                            }
+                        }
+                    };
+
+                    if (isServerMode && currentChannelId) {
+                        // Add to channel-specific messages
+                        const channelMsgs = channelMessages.get(currentChannelId) || [];
+                        if (channelMsgs.length > 0) {
+                            processAttachment(channelMsgs);
+                        }
+                    } else {
+                        // Add to all messages
+                        processAttachment(allMessages);
+                    }
+                    continue;
+                }
+
+                // Try to parse message line with different formats
+                let messageMatch = null;
+                let messageId = null;
+                let userId = null;
+
+                // Debug: Log the line we're trying to parse
+                console.log("Parsing line:", line);
+
+                // Format 1: With MESSAGE ID and USER ID
+                const format1Regex = /\[ LOG ([^\]]+) \] \[([^\]]+) ([^\]]+)\](?:: \[#([^\]]+) ([^\]]+)\])? - ([^:]+): (.*) \(MESSAGE ID: ([^,]+), USER ID: ([^)]+)\)/;
+                messageMatch = line.match(format1Regex);
+
+                if (messageMatch) {
+                    console.log("Matched format 1:", messageMatch);
+                    messageId = messageMatch[8];
+                    userId = messageMatch[9];
+                } else {
+                    // Format 2: With just ID
+                    const format2Regex = /\[ LOG ([^\]]+) \] \[([^\]]+) ([^\]]+)\](?:: \[#([^\]]+) ([^\]]+)\])? - ([^:]+): (.*) \(ID: ([^)]+)\)/;
+                    messageMatch = line.match(format2Regex);
+
+                    if (messageMatch) {
+                        console.log("Matched format 2:", messageMatch);
+                        messageId = messageMatch[8];
+                        userId = 'unknown';
+                    } else {
+                        // Try a more lenient regex as a fallback
+                        const fallbackRegex = /\[ LOG ([^\]]+) \] \[([^\]]+) ([^\]]+)\] - ([^:]+): (.*)/;
+                        const fallbackMatch = line.match(fallbackRegex);
+
+                        if (fallbackMatch) {
+                            console.log("Matched fallback format:", fallbackMatch);
+                            messageMatch = fallbackMatch;
+                            messageId = 'unknown';
+                            userId = 'unknown';
+                        } else {
+                            console.log("No match for line:", line);
+                        }
+                    }
+                }
+
+                if (messageMatch) {
+                    const timestamp = messageMatch[1];
+                    const serverOrChannelName = messageMatch[2];
+                    const serverOrChannelId = messageMatch[3];
+
+                    let msgChannelName = isServerMode ? currentChannelName : channelName;
+                    let msgChannelId = isServerMode ? currentChannelId : channelId;
+
+                    let author, content;
+
+                    // Check if we're using the fallback format
+                    if (messageId === 'unknown' && userId === 'unknown') {
+                        // Fallback format has different indices
+                        author = messageMatch[4];
+                        content = messageMatch[5];
+                    } else {
+                        // If it's a server message with channel info
+                        if (messageMatch[4] && messageMatch[5]) {
+                            msgChannelName = messageMatch[4];
+                            msgChannelId = messageMatch[5];
+                        }
+
+                        author = messageMatch[6];
+                        content = messageMatch[7];
+                    }
+
+                    // Update dates
+                    const messageDate = new Date(timestamp);
+
+                    // Create message object
+                    const message = {
+                        timestamp,
+                        date: messageDate,
+                        author,
+                        content,
+                        messageId,
+                        userId,
+                        channelName: msgChannelName,
+                        channelId: msgChannelId
+                    };
+
+                    if (isServerMode) {
+                        // Add to channel-specific messages
+                        if (msgChannelId) {
+                            // Get or create channel messages array
+                            let channelMsgs = channelMessages.get(msgChannelId) || [];
+                            channelMsgs.push(message);
+                            channelMessages.set(msgChannelId, channelMsgs);
+
+                            // Update channel stats
+                            const stats = channelStats.get(msgChannelId) || {
+                                messageCount: 0,
+                                users: new Set(),
+                                firstDate: null,
+                                lastDate: null
+                            };
+
+                            stats.messageCount++;
+
+                            if (userId !== 'unknown') {
+                                stats.users.add(userId);
+                            } else {
+                                stats.users.add(author);
+                            }
+
+                            if (!stats.firstDate || messageDate < stats.firstDate) {
+                                stats.firstDate = messageDate;
+                            }
+
+                            if (!stats.lastDate || messageDate > stats.lastDate) {
+                                stats.lastDate = messageDate;
+                            }
+
+                            channelStats.set(msgChannelId, stats);
+
+                            // Add to global stats
+                            messageCount++;
+
+                            if (userId !== 'unknown') {
+                                uniqueUsers.add(userId);
+                            } else {
+                                uniqueUsers.add(author);
+                            }
+
+                            if (!firstMessageDate || messageDate < firstMessageDate) {
+                                firstMessageDate = messageDate;
+                            }
+
+                            if (!lastMessageDate || messageDate > lastMessageDate) {
+                                lastMessageDate = messageDate;
+                            }
+                        }
+                    } else {
+                        // Add to all messages for non-server mode
+                        allMessages.push(message);
+
+                        // Update global stats
+                        messageCount++;
+
+                        if (userId !== 'unknown') {
+                            uniqueUsers.add(userId);
+                        } else {
+                            uniqueUsers.add(author);
+                        }
+
+                        if (!firstMessageDate || messageDate < firstMessageDate) {
+                            firstMessageDate = messageDate;
+                        }
+
+                        if (!lastMessageDate || messageDate > lastMessageDate) {
+                            lastMessageDate = messageDate;
+                        }
+                    }
+                }
+            }
+
+            if (isServerMode) {
+                // Sort channel messages by date (newest first)
+                for (const [channelId, messages] of channelMessages.entries()) {
+                    messages.sort((a, b) => b.date - a.date);
+                }
+
+                // Update server UI
+                updateServerInfo();
+                updateServerStats();
+                renderChannelList();
+
+                // Select all channels by default
+                serverChannels.forEach(channel => {
+                    selectedChannels.add(channel.id);
+                });
+
+                // Update channel selection UI
+                updateChannelSelection();
+
+                // Load initial batch of messages from all selected channels
+                loadServerMessages(true);
+            } else {
+                // Sort all messages by date (newest first)
+                allMessages.sort((a, b) => b.date - a.date);
+
+                // Update UI with parsed data
+                updateChannelInfo(isGroupDM);
+                updateStats();
+
+                // Load initial batch of messages
+                loadMoreMessages(true);
+            }
+        }
+
+        function updateChannelInfo(isGroupDM) {
+            if (isGroupDM) {
+                channelNameElement.textContent = channelName || 'Direct Message';
+                channelIdElement.textContent = `Channel ID: ${channelId}`;
+            } else {
+                channelNameElement.textContent = `${serverName} / ${channelName}`;
+                channelIdElement.textContent = `Server ID: ${serverId}`;
+            }
+        }
+
+        function updateStats() {
+            messageCountElement.textContent = messageCount;
+            userCountElement.textContent = uniqueUsers.size;
+
+            if (firstMessageDate) {
+                firstMessageDateElement.textContent = formatDate(firstMessageDate);
+            }
+
+            if (lastMessageDate) {
+                lastMessageDateElement.textContent = formatDate(lastMessageDate);
+            }
+        }
+
+        function formatDate(date) {
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function renderMessagesAtTop(messages) {
+            // Group messages by day for visual separation
+            let currentDay = null;
+
+            // Create a document fragment to build the messages
+            const fragment = document.createDocumentFragment();
+
+            // Render each message (in reverse order for bottom-to-top display)
+            messages.slice().reverse().forEach((message, index) => {
+                const messageDay = new Date(message.date).toLocaleDateString();
+
+                // Add date separator if it's a new day
+                if (messageDay !== currentDay) {
+                    currentDay = messageDay;
+                    const dateSeparator = document.createElement('div');
+                    dateSeparator.className = 'date-separator';
+                    dateSeparator.innerHTML = `
+                        <div class="date-line"></div>
+                        <div class="date-text">${formatDateSeparator(message.date)}</div>
+                        <div class="date-line"></div>
+                    `;
+                    fragment.appendChild(dateSeparator);
+                }
+
+                // Create message element
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                messageElement.style.animationDelay = `${index * 0.03}s`;
+
+                // Get initials for avatar
+                const initials = getInitials(message.author);
+
+                // Generate avatar color based on user ID or author name
+                const avatarColor = message.userId !== 'unknown'
+                    ? generateColorFromUserId(message.userId)
+                    : generateColorFromUserId(message.author);
+
+                // Format timestamp
+                const formattedTime = formatMessageTime(message.date);
+
+                // Create message HTML
+                messageElement.innerHTML = `
+                    <div class="message-avatar" style="background-color: ${avatarColor}">
+                        ${initials}
+                    </div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="message-author">${escapeHTML(message.author)}</div>
+                            <div class="message-timestamp">${formattedTime}</div>
+                        </div>
+                        <div class="message-text">${formatMessageContent(message.content)}</div>
+                        <div class="message-meta">
+                            <div class="message-id">${message.messageId}</div>
+                            ${message.userId !== 'unknown' ? `<div class="user-id">${message.userId}</div>` : ''}
+                        </div>
+                        ${renderAttachments(message.attachments)}
+                    </div>
+                `;
+
+                fragment.appendChild(messageElement);
+            });
+
+            // Insert at the top of the container
+            if (messagesContainer.firstChild) {
+                messagesContainer.insertBefore(fragment, messagesContainer.firstChild);
+            } else {
+                messagesContainer.appendChild(fragment);
+            }
+        }
+
+        function loadMoreMessages(isInitialLoad = false) {
+            if (isLoadingMore) return;
+            isLoadingMore = true;
+
+            // Remove existing load more button if any
+            const existingButton = document.getElementById('load-more-indicator');
+            if (existingButton) {
+                existingButton.remove();
+            }
+
+            // If it's the initial load, clear the container
+            if (isInitialLoad) {
+                messagesContainer.innerHTML = '';
+                displayedMessages = [];
+            }
+
+            // Calculate how many messages to load (from the top of the array)
+            const startIndex = displayedMessages.length;
+            const endIndex = Math.min(startIndex + batchSize, allMessages.length);
+
+            // Get the next batch of messages
+            const newMessages = allMessages.slice(startIndex, endIndex);
+            displayedMessages = displayedMessages.concat(newMessages);
+
+            // Render the new messages at the top
+            if (isInitialLoad) {
+                renderMessages(newMessages, true);
+            } else {
+                // For subsequent loads, insert at the top
+                renderMessagesAtTop(newMessages);
+            }
+
+            // Add "Load More" button at the bottom if there are more messages to load
+            if (endIndex < allMessages.length) {
+                const loadMoreIndicator = document.createElement('div');
+                loadMoreIndicator.id = 'load-more-indicator';
+                loadMoreIndicator.className = 'load-more';
+                loadMoreIndicator.innerHTML = `
+                    <button id="load-more-button" class="load-more-button">
+                        <span class="button-icon">⬆️</span>
+                        <span class="button-text">Load Older Messages</span>
+                    </button>
+                `;
+
+                // Insert at the top of the container (first loaded message)
+                if (messagesContainer.firstChild) {
+                    messagesContainer.insertBefore(loadMoreIndicator, messagesContainer.firstChild);
+                } else {
+                    messagesContainer.appendChild(loadMoreIndicator);
+                }
+
+                // Add event listener to the load more button
+                document.getElementById('load-more-button').addEventListener('click', function() {
+                    loadMoreMessages(false);
+                });
+            }
+
+            isLoadingMore = false;
+        }
+
+        function renderMessages(messages, isInitialLoad = false) {
+            // Group messages by day for visual separation
+            let currentDay = null;
+
+            // Create a document fragment to build the messages
+            const fragment = document.createDocumentFragment();
+
+            // Render each message (in reverse order for bottom-to-top display)
+            messages.slice().reverse().forEach((message, index) => {
+                const messageDay = new Date(message.date).toLocaleDateString();
+
+                // Add date separator if it's a new day
+                if (messageDay !== currentDay) {
+                    currentDay = messageDay;
+                    const dateSeparator = document.createElement('div');
+                    dateSeparator.className = 'date-separator';
+                    dateSeparator.innerHTML = `
+                        <div class="date-line"></div>
+                        <div class="date-text">${formatDateSeparator(message.date)}</div>
+                        <div class="date-line"></div>
+                    `;
+                    fragment.appendChild(dateSeparator);
+                }
+
+                // Create message element
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                messageElement.style.animationDelay = `${index * 0.03}s`;
+
+                // Get initials for avatar
+                const initials = getInitials(message.author);
+
+                // Generate avatar color based on user ID or author name
+                const avatarColor = message.userId !== 'unknown'
+                    ? generateColorFromUserId(message.userId)
+                    : generateColorFromUserId(message.author);
+
+                // Format timestamp
+                const formattedTime = formatMessageTime(message.date);
+
+                // Create message HTML
+                messageElement.innerHTML = `
+                    <div class="message-avatar" style="background-color: ${avatarColor}">
+                        ${initials}
+                    </div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="message-author">${escapeHTML(message.author)}</div>
+                            <div class="message-timestamp">${formattedTime}</div>
+                        </div>
+                        <div class="message-text">${formatMessageContent(message.content)}</div>
+                        <div class="message-meta">
+                            <div class="message-id">${message.messageId}</div>
+                            ${message.userId !== 'unknown' ? `<div class="user-id">${message.userId}</div>` : ''}
+                        </div>
+                        ${renderAttachments(message.attachments)}
+                    </div>
+                `;
+
+                fragment.appendChild(messageElement);
+            });
+
+            // Append all messages at once
+            messagesContainer.appendChild(fragment);
+        }
+
+        function formatDateSeparator(date) {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (date.toDateString() === today.toDateString()) {
+                return 'Today';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            }
+        }
+
+        function formatMessageTime(date) {
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+
+            // Remove any non-letter characters and split by spaces
+            const parts = name.replace(/[^a-zA-Z\s]/g, '').split(/\s+/);
+
+            if (parts.length === 0 || (parts.length === 1 && parts[0] === '')) {
+                return '?';
+            }
+
+            if (parts.length === 1) {
+                return parts[0].charAt(0).toUpperCase();
+            }
+
+            return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+        }
+
+        function generateColorFromUserId(userId) {
+            // Generate a consistent color based on user ID or name
+            let hash = 0;
+            for (let i = 0; i < userId.length; i++) {
+                hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+
+            // Use hue between 0 and 360, with good saturation and lightness
+            const h = Math.abs(hash) % 360;
+            const s = 65 + (Math.abs(hash) % 20); // 65-85%
+            const l = 45 + (Math.abs(hash) % 10); // 45-55%
+
+            return `hsl(${h}, ${s}%, ${l}%)`;
+        }
+
+        function formatMessageContent(content) {
+            if (!content) return '';
+
+            // Escape HTML
+            let formattedContent = escapeHTML(content);
+
+            // Format URLs
+            formattedContent = formattedContent.replace(
+                /(https?:\/\/[^\s]+)/g,
+                '<a href="$1" target="_blank" class="message-link">$1</a>'
+            );
+
+            // Format Discord mentions
+            formattedContent = formattedContent.replace(
+                /<@!?(\d+)>/g,
+                '<span class="mention">@user</span>'
+            );
+
+            // Format Discord channel mentions
+            formattedContent = formattedContent.replace(
+                /<#(\d+)>/g,
+                '<span class="mention">#channel</span>'
+            );
+
+            return formattedContent;
+        }
+
+        function renderAttachments(attachments) {
+            if (!attachments || attachments.length === 0) return '';
+
+            let html = '<div class="attachments">';
+
+            attachments.forEach(attachment => {
+                // Get file extension and determine file type
+                const fileExt = attachment.name.split('.').pop().toLowerCase();
+
+                // Define file type arrays
+                const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif', 'tiff', 'tif', 'heic', 'heif'];
+                const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'm4v', '3gp', 'mpg', 'mpeg'];
+
+                const isImage = imageExtensions.includes(fileExt);
+                const isGif = fileExt === 'gif';
+                const isVideo = videoExtensions.includes(fileExt);
+
+                if (isImage) {
+                    // Render image directly (GIFs will autoplay)
+                    html += `
+                        <div class="attachment attachment-media">
+                            <div class="attachment-image-container">
+                                <img src="${attachment.url}" alt="${escapeHTML(attachment.name)}"
+                                     class="attachment-image"
+                                     loading="${isGif ? 'eager' : 'lazy'}"
+                                     onclick="window.open('${attachment.url}', '_blank')">
+                            </div>
+                            <div class="attachment-info">
+                                <span class="attachment-icon">${isGif ? '🎞️' : '🖼️'}</span>
+                                <a href="${attachment.url}" target="_blank" class="attachment-link">${escapeHTML(attachment.name)}</a>
+                            </div>
+                        </div>
+                    `;
+                } else if (isVideo) {
+                    // Render video player (only plays when mouse is held down)
+                    html += `
+                        <div class="attachment attachment-media">
+                            <div class="attachment-video-container">
+                                <video src="${attachment.url}" class="attachment-video" preload="metadata"
+                                       onmousedown="this.play()" onmouseup="this.pause()" onmouseleave="this.pause()"
+                                       controls="false">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <div class="attachment-info">
+                                <span class="attachment-icon">🎬</span>
+                                <a href="${attachment.url}" target="_blank" class="attachment-link">${escapeHTML(attachment.name)}</a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Render regular attachment link for non-media files
+                    // Choose appropriate icon based on file type
+                    let fileIcon = '📎';
+
+                    // Determine file type icon
+                    if (['pdf'].includes(fileExt)) {
+                        fileIcon = '📄';
+                    } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(fileExt)) {
+                        fileIcon = '🗜️';
+                    } else if (['doc', 'docx', 'txt', 'rtf', 'odt'].includes(fileExt)) {
+                        fileIcon = '📝';
+                    } else if (['xls', 'xlsx', 'csv', 'ods'].includes(fileExt)) {
+                        fileIcon = '📊';
+                    } else if (['ppt', 'pptx', 'odp'].includes(fileExt)) {
+                        fileIcon = '📑';
+                    } else if (['exe', 'msi', 'bat', 'sh'].includes(fileExt)) {
+                        fileIcon = '⚙️';
+                    } else if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(fileExt)) {
+                        fileIcon = '🎵';
+                    }
+
+                    html += `
+                        <div class="attachment">
+                            <span class="attachment-icon">${fileIcon}</span>
+                            <a href="${attachment.url}" target="_blank" class="attachment-link">${escapeHTML(attachment.name)}</a>
+                        </div>
+                    `;
+                }
+            });
+
+            html += '</div>';
+            return html;
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function scrollToTop() {
+            messagesContainer.scrollTop = 0;
+        }
+
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme', !isDarkTheme);
+
+            // Add animation to body
+            document.body.style.transition = 'background-color 0.5s ease, color 0.5s ease';
+
+            // Update button text
+            toggleThemeButton.querySelector('.button-text').textContent = isDarkTheme ? 'Light Theme' : 'Dark Theme';
+            toggleThemeButton.querySelector('.button-icon').textContent = isDarkTheme ? '☀️' : '🌙';
+        }
+
+        function handleScroll() {
+            // Disabled automatic loading on scroll
+            // Manual loading only through the "Load More" button
+        }
+
+        function handleServerScroll() {
+            // Disabled automatic loading on scroll
+            // Manual loading only through the "Load More" button
+        }
+
+        // Server mode functions
+        function updateServerInfo() {
+            serverNameElement.textContent = serverName || 'Unknown Server';
+            serverIdElement.textContent = `Server ID: ${serverId}`;
+        }
+
+        function updateServerStats() {
+            serverMessageCountElement.textContent = messageCount;
+            serverUserCountElement.textContent = uniqueUsers.size;
+            serverChannelCountElement.textContent = serverChannels.length;
+
+            if (firstMessageDate && lastMessageDate) {
+                serverDateRangeElement.textContent = `${formatDate(firstMessageDate)} - ${formatDate(lastMessageDate)}`;
+            }
+        }
+
+        function renderChannelList() {
+            channelList.innerHTML = '';
+            channelCountElement.textContent = serverChannels.length;
+
+            // Sort channels by name
+            serverChannels.sort((a, b) => a.name.localeCompare(b.name));
+
+            serverChannels.forEach(channel => {
+                const stats = channelStats.get(channel.id) || { messageCount: 0, users: new Set() };
+                const channelItem = document.createElement('div');
+                channelItem.className = 'channel-item';
+                channelItem.dataset.channelId = channel.id;
+                channelItem.innerHTML = `
+                    <span class="channel-icon">#</span>
+                    <span class="channel-name">${escapeHTML(channel.name)}</span>
+                    <span class="channel-badge">${stats.messageCount}</span>
+                `;
+
+                channelItem.addEventListener('click', () => {
+                    toggleChannelSelection(channel.id);
+                });
+
+                channelList.appendChild(channelItem);
+            });
+        }
+
+        function toggleChannelSelection(channelId) {
+            if (selectedChannels.has(channelId)) {
+                selectedChannels.delete(channelId);
+            } else {
+                selectedChannels.add(channelId);
+            }
+
+            updateChannelSelection();
+            loadServerMessages(true);
+        }
+
+        function updateChannelSelection() {
+            // Update channel item styling
+            document.querySelectorAll('.channel-item').forEach(item => {
+                const channelId = item.dataset.channelId;
+                if (selectedChannels.has(channelId)) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        function selectAllChannels() {
+            serverChannels.forEach(channel => {
+                selectedChannels.add(channel.id);
+            });
+
+            updateChannelSelection();
+            loadServerMessages(true);
+        }
+
+        function clearChannelSelection() {
+            selectedChannels.clear();
+            updateChannelSelection();
+            serverMessagesContainer.innerHTML = `
+                <div class="welcome-message">
+                    <h3>No channels selected</h3>
+                    <p>Select one or more channels from the sidebar to view messages</p>
+                </div>
+            `;
+        }
+
+        function loadServerMessages(isInitialLoad = false) {
+            if (isLoadingMore) return;
+            isLoadingMore = true;
+
+            // Clear messages container if it's the initial load
+            if (isInitialLoad) {
+                serverMessagesContainer.innerHTML = '';
+            }
+
+            // If no channels selected, show message
+            if (selectedChannels.size === 0) {
+                serverMessagesContainer.innerHTML = `
+                    <div class="welcome-message">
+                        <h3>No channels selected</h3>
+                        <p>Select one or more channels from the sidebar to view messages</p>
+                    </div>
+                `;
+                isLoadingMore = false;
+                return;
+            }
+
+            // Collect messages from selected channels
+            let combinedMessages = [];
+            selectedChannels.forEach(channelId => {
+                const channelMsgs = channelMessages.get(channelId) || [];
+                combinedMessages = combinedMessages.concat(channelMsgs);
+            });
+
+            // Sort by date (newest first)
+            combinedMessages.sort((a, b) => b.date - a.date);
+
+            // Calculate how many messages to load
+            const startIndex = 0;
+            const endIndex = Math.min(batchSize, combinedMessages.length);
+
+            // Get the batch of messages
+            const messagesToRender = combinedMessages.slice(startIndex, endIndex);
+
+            // Render the messages
+            renderServerMessages(messagesToRender);
+
+            // Add "Load More" button if there are more messages
+            if (endIndex < combinedMessages.length) {
+                const loadMoreIndicator = document.createElement('div');
+                loadMoreIndicator.id = 'server-load-more-indicator';
+                loadMoreIndicator.className = 'load-more';
+                loadMoreIndicator.innerHTML = `
+                    <button id="server-load-more-button" class="load-more-button">
+                        <span class="button-icon">⬇️</span>
+                        <span class="button-text">Load More Messages</span>
+                    </button>
+                `;
+
+                serverMessagesContainer.appendChild(loadMoreIndicator);
+
+                // Add event listener to the load more button
+                document.getElementById('server-load-more-button').addEventListener('click', () => {
+                    loadMoreServerMessages(combinedMessages);
+                });
+            }
+
+            isLoadingMore = false;
+        }
+
+        function loadMoreServerMessages(combinedMessages) {
+            if (isLoadingMore) return;
+            isLoadingMore = true;
+
+            // Remove existing load more button
+            const existingButton = document.getElementById('server-load-more-indicator');
+            if (existingButton) {
+                existingButton.remove();
+            }
+
+            // Calculate how many messages to load
+            const currentCount = document.querySelectorAll('#server-messages .message').length;
+            const startIndex = currentCount;
+            const endIndex = Math.min(startIndex + batchSize, combinedMessages.length);
+
+            // Get the next batch of messages
+            const messagesToRender = combinedMessages.slice(startIndex, endIndex);
+
+            // Render the messages
+            renderServerMessages(messagesToRender, false);
+
+            // Add "Load More" button if there are more messages
+            if (endIndex < combinedMessages.length) {
+                const loadMoreIndicator = document.createElement('div');
+                loadMoreIndicator.id = 'server-load-more-indicator';
+                loadMoreIndicator.className = 'load-more';
+                loadMoreIndicator.innerHTML = `
+                    <button id="server-load-more-button" class="load-more-button">
+                        <span class="button-icon">⬇️</span>
+                        <span class="button-text">Load More Messages</span>
+                    </button>
+                `;
+
+                serverMessagesContainer.appendChild(loadMoreIndicator);
+
+                // Add event listener to the load more button
+                document.getElementById('server-load-more-button').addEventListener('click', () => {
+                    loadMoreServerMessages(combinedMessages);
+                });
+            }
+
+            isLoadingMore = false;
+        }
+
+        function renderServerMessages(messages, isInitialLoad = true) {
+            // Group messages by day for visual separation
+            let currentDay = null;
+
+            // Create a document fragment to build the messages
+            const fragment = document.createDocumentFragment();
+
+            // Render each message
+            messages.forEach((message, index) => {
+                const messageDay = new Date(message.date).toLocaleDateString();
+
+                // Add date separator if it's a new day
+                if (messageDay !== currentDay) {
+                    currentDay = messageDay;
+                    const dateSeparator = document.createElement('div');
+                    dateSeparator.className = 'date-separator';
+                    dateSeparator.innerHTML = `
+                        <div class="date-line"></div>
+                        <div class="date-text">${formatDateSeparator(message.date)}</div>
+                        <div class="date-line"></div>
+                    `;
+                    fragment.appendChild(dateSeparator);
+                }
+
+                // Create message element
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                messageElement.style.animationDelay = `${index * 0.03}s`;
+
+                // Get initials for avatar
+                const initials = getInitials(message.author);
+
+                // Generate avatar color based on user ID or author name
+                const avatarColor = message.userId !== 'unknown'
+                    ? generateColorFromUserId(message.userId)
+                    : generateColorFromUserId(message.author);
+
+                // Format timestamp
+                const formattedTime = formatMessageTime(message.date);
+
+                // Create message HTML with channel indicator for server mode
+                messageElement.innerHTML = `
+                    <div class="message-avatar" style="background-color: ${avatarColor}">
+                        ${initials}
+                    </div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <div class="message-author">${escapeHTML(message.author)}</div>
+                            <div class="message-timestamp">${formattedTime}</div>
+                        </div>
+                        <div class="message-text">
+                            <span class="channel-indicator">#${escapeHTML(message.channelName)}</span>
+                            ${formatMessageContent(message.content)}
+                        </div>
+                        <div class="message-meta">
+                            <div class="message-id">${message.messageId}</div>
+                            ${message.userId !== 'unknown' ? `<div class="user-id">${message.userId}</div>` : ''}
+                        </div>
+                        ${renderAttachments(message.attachments)}
+                    </div>
+                `;
+
+                fragment.appendChild(messageElement);
+            });
+
+            // Append all messages at once
+            serverMessagesContainer.appendChild(fragment);
+        }
+    </script>
+</body>
+</html>

@@ -44,3 +44,5 @@ input type:
 input channel id or if server type is selected you can type every for all channels
 
 logs should appear in ./logs and the file names are [name]_[id].log
+
+open the log viewer html and select a log file to view it

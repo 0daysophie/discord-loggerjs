@@ -1867,12 +1867,17 @@
                 loadMoreIndicator.className = 'load-more';
                 loadMoreIndicator.innerHTML = `
                     <button id="server-load-more-button" class="load-more-button">
-                        <span class="button-icon">⬇️</span>
-                        <span class="button-text">Load More Messages</span>
+                        <span class="button-icon">⬆️</span>
+                        <span class="button-text">Load Older Messages</span>
                     </button>
                 `;
 
-                serverMessagesContainer.appendChild(loadMoreIndicator);
+                // Insert at the top of the container
+                if (serverMessagesContainer.firstChild) {
+                    serverMessagesContainer.insertBefore(loadMoreIndicator, serverMessagesContainer.firstChild);
+                } else {
+                    serverMessagesContainer.appendChild(loadMoreIndicator);
+                }
 
                 // Add event listener to the load more button
                 document.getElementById('server-load-more-button').addEventListener('click', () => {
@@ -1901,7 +1906,7 @@
             // Get the next batch of messages
             const messagesToRender = combinedMessages.slice(startIndex, endIndex);
 
-            // Render the messages
+            // Render the messages at the top
             renderServerMessages(messagesToRender, false);
 
             // Add "Load More" button if there are more messages
@@ -1911,12 +1916,17 @@
                 loadMoreIndicator.className = 'load-more';
                 loadMoreIndicator.innerHTML = `
                     <button id="server-load-more-button" class="load-more-button">
-                        <span class="button-icon">⬇️</span>
-                        <span class="button-text">Load More Messages</span>
+                        <span class="button-icon">⬆️</span>
+                        <span class="button-text">Load Older Messages</span>
                     </button>
                 `;
 
-                serverMessagesContainer.appendChild(loadMoreIndicator);
+                // Insert at the top of the container
+                if (serverMessagesContainer.firstChild) {
+                    serverMessagesContainer.insertBefore(loadMoreIndicator, serverMessagesContainer.firstChild);
+                } else {
+                    serverMessagesContainer.appendChild(loadMoreIndicator);
+                }
 
                 // Add event listener to the load more button
                 document.getElementById('server-load-more-button').addEventListener('click', () => {
@@ -1934,8 +1944,8 @@
             // Create a document fragment to build the messages
             const fragment = document.createDocumentFragment();
 
-            // Render each message
-            messages.forEach((message, index) => {
+            // Render each message (in reverse order for bottom-to-top display)
+            messages.slice().reverse().forEach((message, index) => {
                 const messageDay = new Date(message.date).toLocaleDateString();
 
                 // Add date separator if it's a new day

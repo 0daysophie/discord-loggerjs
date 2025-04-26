@@ -11,6 +11,7 @@
 1. `node logger.js`
 
 2. input your token
+
 to take your token, open discord.com/app and then open webtools(F12)
 Open console section and write:
 ```javascript

@@ -48,3 +48,5 @@ logs should appear in ./logs and the file names are [name]_[id].log
 
 open the log viewer html and select a log file to view it
 Messages are displayed from bottom to top, with the most recent messages at the bottom of the screen
+
+Software made with ChatGPT/AI

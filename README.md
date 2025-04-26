@@ -1,16 +1,16 @@
 # logger.js - Discord chat logger and exporter
 
-Setup:
+## Setup:
 
-Install NodeJS
+1. Install NodeJS
 
-run `npm install discord.js-selfbot-v13`
+2. run `npm install discord.js-selfbot-v13`
 
-Startup:
+## Startup:
 
-`node logger.js`
+1. `node logger.js`
 
-# input your token
+2. input your token
 to take your token, open discord.com/app and then open webtools(F12)
 Open console section and write:
 ```javascript
@@ -35,13 +35,13 @@ window.webpackChunkdiscord_app.pop();
 console.log('%cWorked!', 'font-size: 50px');
 console.log(`%cYou now have your token in the clipboard!`, 'font-size: 16px');
 ```
-input type:
+3. input type:
 
 - none - will ask for server id and channel ids
 - group - group dm
 - dm - private dm
 
-input channel id or if server type is selected you can type every for all channels
+4. input channel id or if server type is selected you can type every for all channels
 
 logs should appear in ./logs and the file names are [name]_[id].log
 
